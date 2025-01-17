@@ -34,6 +34,7 @@ app.get('/appointments', (req, res) => {
 app.post('/availability', (req, res) => {
     let startUnixInteger = luxon.DateTime.fromISO(req.body.start).toUnixInteger()
     let endUnixInteger = luxon.DateTime.fromISO(req.body.end).toUnixInteger()
+    // Create an appointment every 15 minutes. Don't create an appointment if < 15 minutes (900 seconds) available.
     for (let i = startUnixInteger; i <= endUnixInteger-900; i += 900) {
         allAppointments.push({
             id: crypto.randomUUID(),
@@ -59,6 +60,7 @@ app.post('/appointments/:appointmentID/reserve', (req, res) => {
         return res.status(400).json({"error": "Appointment not found"})
     }
     let appointment = allAppointments[appointmentIndex];
+    // Can't reserve if the appointment is less than 24 hours in the future
     if(luxon.DateTime.fromSeconds(appointment.start) < luxon.DateTime.now().plus({ hours: 24 })){
         return res.status(400).json({error: "Appointments must be reserved at least 24 hours in advance."})
     }
@@ -77,6 +79,12 @@ app.post('/appointments/:appointmentID/confirm', (req, res) => {
     res.sendStatus(200)
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`Reservation API listening on port ${port}`)
 })
+
+app.closeServer = () => {
+    server.close();
+};
+
+module.exports = app;
