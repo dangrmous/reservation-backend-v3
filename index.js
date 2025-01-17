@@ -11,21 +11,24 @@ app.get('/appointments', (req, res) => {
     let availableAppointments = []
     for (const appointmentIndex in allAppointments){
         let appointment = allAppointments[appointmentIndex];
+        // If the reservation hasn't been reserved, add to those displayed
         if (appointment.reservedBy == null)
         {
             availableAppointments.push(appointment);
         }
         else {
+            // The reservation has been reserved, but it's been 30 minutes, and it hasn't been confirmed. Add to those displayed.
             if ((appointment.reservedDate.toUnixInteger() +
                     1800 < luxon.DateTime.now().toUnixInteger()) &&
                     appointment.confirmed == false) {
+                // Since we are re-adding this to the displayed options, let's remove the expired reservation information
                 allAppointments[appointmentIndex].reservedBy = null;
                 allAppointments[appointmentIndex].reservedDate = null;
                 availableAppointments.push(appointment);
             }
         }
     }
-    return res.status(200).json(availableAppointments)
+    res.status(200).json(availableAppointments)
 })
 
 app.post('/availability', (req, res) => {
