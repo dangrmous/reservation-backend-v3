@@ -5,49 +5,75 @@ app.use(express.json())
 const port = 3000
 const crypto = require("crypto");
 
-let allAppointments = {}
+let allAppointments = []
 
 app.get('/appointments', (req, res) => {
-    let availableAppointments = {}
-    if (Object.keys(allAppointments).length == 0)
-        return res.status(200).json([]);
-    Object.keys(allAppointments).reduce((_, key) => {
-        if (allAppointments[key].reservedBy == null)
-            availableAppointments[key] = allAppointments[key];
-        else {
-            if ((allAppointments[key].reservedDate + 1800 < luxon.DateTime.now().toUnixInteger()) && allAppointments[key].confirmed == false)
-                availableAppointments.push(allAppointments[key]);
+    let availableAppointments = []
+    for (const appointmentIndex in allAppointments){
+        let appointment = allAppointments[appointmentIndex];
+        if (appointment.reservedBy == null)
+        {
+            availableAppointments.push(appointment);
         }
-    })
-    res.status(200).json(availableAppointments)
+        else {
+            if ((appointment.reservedDate.toUnixInteger() +
+                    30 < luxon.DateTime.now().toUnixInteger()) &&
+                    appointment.confirmed == false) {
+                allAppointments[appointmentIndex].reservedBy = null;
+                allAppointments[appointmentIndex].reservedDate = null;
+                availableAppointments.push(appointment);
+            }
+        }
+    }
+    return res.status(200).json(availableAppointments)
 })
 
 app.post('/availability', (req, res) => {
     let startUnixInteger = luxon.DateTime.fromISO(req.body.start).toUnixInteger()
     let endUnixInteger = luxon.DateTime.fromISO(req.body.end).toUnixInteger()
     for (let i = startUnixInteger; i <= endUnixInteger-900; i += 900) {
-        allAppointments[crypto.randomUUID()] = {
+        allAppointments.push({
+            id: crypto.randomUUID(),
             providerName : req.body.providerName,
             start: i,
             end: i+900,
-            created: luxon.DateTime.now(),
+            created: luxon.DateTime.now().toUnixInteger(),
             confirmed: false,
             reservedBy: null,
             reservedDate: null,
-        }
-        console.log(`start is ${luxon.DateTime.fromSeconds(i)}`)
-        console.log(`end is ${luxon.DateTime.fromSeconds(i+900)}`)
+        })
     }
     res.sendStatus(200)
 })
 
 app.post('/appointments/:appointmentID/reserve', (req, res) => {
-    appointmentID = req.params.appointmentID
-    allAppointments[appointmentID].reservedBy = req.body.name
-    allAppointments[appointmentID].reservedDate = luxon.DateTime.now()
+    let appointmentID = req.params.appointmentID
+    let appointmentIndex = allAppointments.findIndex(
+        (appt) => {
+            return appt.id == appointmentID
+        })
+    if(appointmentIndex == -1){
+        return res.status(400).json({"error": "Appointment not found"})
+    }
+    let appointment = allAppointments[appointmentIndex];
+    if(luxon.DateTime.fromSeconds(appointment.start) < luxon.DateTime.now().plus({ hours: 24 })){
+        return res.status(400).json({error: "Appointments must be reserved at least 24 hours in advance."})
+    }
+    appointment.reservedBy = req.body.name
+    appointment.reservedDate = luxon.DateTime.now()
+    res.sendStatus(200)
+})
+
+app.post('/appointments/:appointmentID/confirm', (req, res) => {
+    let appointmentID = req.params.appointmentID
+    let appointmentIndex = allAppointments.findIndex(appointment => {return appointment.id == appointmentID})
+    if(appointmentIndex == -1){
+        return res.status(400).json({"error": "Appointment not found"})
+    }
+    allAppointments[appointmentIndex].confirmed = true
     res.sendStatus(200)
 })
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+    console.log(`Reservation API listening on port ${port}`)
 })
