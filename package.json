@@ -4,7 +4,8 @@
   "description": "A reservation API",
   "main": "index.js",
   "scripts": {
-    "test": "jest reservation_api.test.js"
+    "test": "jest reservation_api.test.js",
+    "server": "node index.js"
   },
   "repository": {
     "type": "git",
