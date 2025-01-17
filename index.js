@@ -17,7 +17,7 @@ app.get('/appointments', (req, res) => {
         }
         else {
             if ((appointment.reservedDate.toUnixInteger() +
-                    30 < luxon.DateTime.now().toUnixInteger()) &&
+                    1800 < luxon.DateTime.now().toUnixInteger()) &&
                     appointment.confirmed == false) {
                 allAppointments[appointmentIndex].reservedBy = null;
                 allAppointments[appointmentIndex].reservedDate = null;
