@@ -3,6 +3,16 @@ NodeJS service providing a backend API for a reservation system for medical prov
 
 ## Documentation
 
+Start the server:
+
+`npm install`
+
+`npm run server`
+
+Run the integration tests (stop the server first if running, with Ctrl-C):
+
+`npm run test`
+
 Endpoints:
 ### `http://localhost:3000/availability`
 - POST: create a new block of available appointments between the `start` and `end` time.
